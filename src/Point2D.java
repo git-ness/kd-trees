@@ -1,5 +1,4 @@
 import edu.princeton.cs.algs4.StdDraw;
-import edu.princeton.cs.algs4.RectHV;
 
 public class Point2D implements Comparable<Point2D> {
     private final double x;
