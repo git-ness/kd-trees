@@ -13,7 +13,6 @@ public class KdTree {
 
     private int size;
     private Node root;
-    private ArrayList<Point2D> pointsInRectangle = new ArrayList<>();
 
     public KdTree() {                              // construct an empty set of points
     }
@@ -49,15 +48,17 @@ public class KdTree {
 
     private void insertNextFreeSubTree(Point2D p, Node node) {
 
-        if (root == null && size == 1) {
+        if (root == null) { // && size == 1
             node = new Node();
             node.p = p;
+            node.horizontal = false;
             root = node;
+
             return;
         }
 
-        if (node.horizontal || size == 2) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
-            if (node.p.x() < p.x()) {
+        if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
+            if (node.p.x() <= p.x()) {
                     /* -------------
                        Right tree and left side
                       -------------- */
@@ -99,13 +100,13 @@ public class KdTree {
                  ------------- */
 
             // TODO: Top - !node.horizontal .. but top what? I think the point is physically above the parent node.
-            if (node.p.y() > p.y()) {
+            if (node.p.y() >= p.y()) {
                 if (node.rt == null) {
                     node.rt = new Node();
                     node.rt.p = p;
 
                     // Next layer in the tree will always be horizontal.
-                    node.rt.horizontal = node.horizontal;
+                    node.rt.horizontal = !node.horizontal;
                 } else {
                     // If not null, call itself recursively to get to the next node in the tree.
                     insertNextFreeSubTree(p, node.rt);
@@ -115,24 +116,53 @@ public class KdTree {
                  /* -------------
                    Bottom of horizontal parent node
                  ------------- */
-                if (node.p.y() < p.y()) {
-                    if (node.lb == null) {
-                        node.lb = new Node();
-                        node.lb.p = p;
 
-                        node.lb.horizontal = node.horizontal;
+                if (node.lb == null) {
+                    node.lb = new Node();
+                    node.lb.p = p;
 
-                    } else {
-                        insertNextFreeSubTree(p, node.lb);
-                    }
+                    node.lb.horizontal = !node.horizontal;
+
+                } else {
+                    insertNextFreeSubTree(p, node.lb);
                 }
+
             }
         }
     }
 
 
     public boolean contains(Point2D p) {             // does the set contain point p?
+        if (p == null) throw new IllegalArgumentException();
+        if (root.p == p) return true;
 
+        if (isPointLeftOfParentNode(p, root)) {
+
+        } else {// It is right
+
+        }
+
+        containsSubMethod();
+
+        return false;
+    }
+
+    private void containsSubMethod()
+
+    private boolean isPointLeftOfParentNode(Point2D p, Node node) {
+        return p.x() < node.p.x();
+    }
+
+    private boolean isPointRightOfParentNode(Point2D p, Node node) {
+        return node.p.x() < p.x();
+    }
+
+    private boolean isPointAboveParentNode(Point2D p, Node node) {
+        return node.p.y() < p.y();
+    }
+
+    private boolean isPointBelowParentNode(Point2D p, Node node) {
+        return node.p.y() > p.y();
     }
 
 
@@ -143,52 +173,38 @@ public class KdTree {
 
     public Iterable<Point2D> range(RectHV rect) {    // all points that are inside the rectangle (or on the boundary)
         if (rect == null) throw new IllegalArgumentException();
-        if (root == null) return null;
+        if (root == null) return new ArrayList<>();
 
-        ArrayList<Point2D> pointsInRectangle = new ArrayList<>();
-
-        // Check to see if the root point is within the rectangle. If so, add it to the arraylist.
-        if (rect.xmin() <= root.p.x() && rect.xmax() >= root.p.x()
-                && rect.ymax() <= root.p.y() && rect.ymax() >= root.p.y()) {
-            pointsInRectangle.add(root.p);
-        }
-
-        // Check if rectangle is to the left of the point in the tree.
-        if (isRectToLeftOfPoint(root, rect)) {
-            if (isPointWithinRectangle(root.lb, rect)) {
-                pointsInRectangle.add(root.lb.p);
-            } else {
-
-            }
-
-        // Since the rectangle is not to the left of the point, it is to the right.
-        } else {
-            if (isPointWithinRectangle(root.rt, rect)) {
-                pointsInRectangle.add(root.rt.p);
-            } else { // go to next level in tree : how do I do this recursively?
-
-            }
-        }
-
-
-        return null;
+        return rangeSubMethod(rect, root);
     }
 
-    private boolean isPointWithinRectangle(Node node, RectHV rect) {
-        return rect.xmin() <= node.p.x() && rect.xmax() >= node.p.x()
-                && rect.ymax() <= node.p.y() && rect.ymax() >= node.p.y();
+    private ArrayList<Point2D> rangeSubMethod(RectHV rect, Node node) {
+        ArrayList<Point2D> pointsInRectangle = new ArrayList<>();
+
+        if (rect.contains(node.p)) {
+            pointsInRectangle.add(node.p);
+        }
+
+        if (node.horizontal) {
+            if (isRectToLeftOfPoint(node, rect)) {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
+            } else {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+            }
+
+        } else {
+            if (isRectBelowPoint(node, rect)) {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
+            } else {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+            }
+        }
+
+        return pointsInRectangle;
     }
 
     private boolean isRectToLeftOfPoint(Node node, RectHV rect) {
         return node.p.x() < rect.xmin();
-    }
-
-    private boolean isRectToRightOfPoint(Node node, RectHV rect) {
-        return node.p.x() > rect.xmax();
-    }
-
-    private boolean isRectAbovePoint(Node node, RectHV rect) {
-        return node.p.y() > rect.ymax();
     }
 
     private boolean isRectBelowPoint(Node node, RectHV rect) {
@@ -197,7 +213,7 @@ public class KdTree {
 
 
     public Point2D nearest(Point2D p) {              // a nearest neighbor in the set to point p; null if the set is empty
-
+        // Add in the rectangle because you're defining the rectangle.
 
 //        if (this.isEmpty()) throw new IllegalArgumentException();
 //        Point2D nearestPoint = null;
