@@ -1,6 +1,8 @@
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.StdDraw;
 
 import java.util.ArrayList;
 
@@ -39,23 +41,23 @@ public class KdTree {
 
     public void insert(Point2D p) {                  // add the point to the set (if it is not already in the set)
         // "write a simplified version of insert() which does everything except set up the RectHV for each node"
-
         if (p == null) throw new IllegalArgumentException();
         size++;
 
-        insertNextFreeSubTree(p, root);
-    }
-
-    private void insertNextFreeSubTree(Point2D p, Node node) {
-
         if (root == null) { // && size == 1
-            node = new Node();
+            Node node = new Node();
             node.p = p;
             node.horizontal = false;
             root = node;
 
             return;
         }
+
+        insertNextFreeSubTree(p, root);
+    }
+
+    private void insertNextFreeSubTree(Point2D p, Node node) {
+
 
         if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
             if (node.p.x() <= p.x()) {
@@ -134,20 +136,40 @@ public class KdTree {
 
     public boolean contains(Point2D p) {             // does the set contain point p?
         if (p == null) throw new IllegalArgumentException();
-        if (root.p == p) return true;
+        if (root == null) return false;
 
-        if (isPointLeftOfParentNode(p, root)) {
-
-        } else {// It is right
-
-        }
-
-        containsSubMethod();
-
-        return false;
+        return containsSubMethod(p, root);
     }
 
-    private void containsSubMethod()
+    private boolean containsSubMethod(Point2D p, Node node) {
+
+        if (p.equals(node.p)) return true;
+        if (node.horizontal) {
+            if (isPointBelowParentNode(p, node)) {
+                if (node.lb != null) {
+                    containsSubMethod(p, node.lb);
+                }
+            } else {
+                if (node.rt != null) {
+                    containsSubMethod(p, node.rt);
+                }
+            }
+
+
+        } else {
+            if (isPointLeftOfParentNode(p, node)) {
+                if (node.lb != null) {
+                    containsSubMethod(p, node.lb);
+                }
+            } else {
+                if (node.rt != null) {
+                    containsSubMethod(p, node.rt);
+                }
+            }
+        }
+        return false;
+
+    }
 
     private boolean isPointLeftOfParentNode(Point2D p, Node node) {
         return p.x() < node.p.x();
@@ -168,6 +190,34 @@ public class KdTree {
 
     public void draw() {                             // draw all points to standard draw
 
+        // draw the points
+        drawSubtree(root);
+    }
+
+    private void drawSubtree(Node node) {
+
+        StdDraw.setPenColor(StdDraw.BLACK);
+        StdDraw.setPenRadius(0.01);
+
+        node.p.draw();
+        if (node.horizontal) {
+            StdDraw.setPenColor(StdDraw.BLUE);
+            StdDraw.line(0, node.p.y(), 1, node.p.y()); // TODO: Draw till hitting the next line, not till the end.
+
+        } else {
+            StdDraw.setPenColor(StdDraw.RED);
+            StdDraw.line(node.p.x(), 0, node.p.x(), 1); // TODO: Draw till hitting the next line, not till the end.
+        }
+
+        if (node.lb != null) {
+            drawSubtree(node.lb);
+        }
+
+        if (node.rt != null) {
+            drawSubtree(node.rt);
+        }
+
+
 
     }
 
@@ -186,18 +236,18 @@ public class KdTree {
         }
 
         if (node.horizontal) {
+            if (isRectBelowPoint(node, rect)) {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
+            } else {
+                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+            }
+        } else {
             if (isRectToLeftOfPoint(node, rect)) {
                 pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
             } else {
                 pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
             }
 
-        } else {
-            if (isRectBelowPoint(node, rect)) {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
-            } else {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
-            }
         }
 
         return pointsInRectangle;
@@ -231,6 +281,18 @@ public class KdTree {
     }
 
     public static void main(String[] args) {         // unit testing of the methods (optional)
+        String filename = args[0];
+        In in = new In(filename);
+        KdTree kdtree = new KdTree();
+        while (!in.isEmpty()) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            Point2D p = new Point2D(x, y);
+            kdtree.insert(p);
+        }
+
+        kdtree.draw();
+
 
     }
 }
