@@ -35,6 +35,47 @@ public class KdTree {
         private Node lb;            // the left | bottom subtree
         private Node rt;            // the right | top subtree
 
+        private RectHV rectLb() {
+
+            if (!horizontal) {
+                return new RectHV(
+                     rect.xmin(),
+                     rect.ymin(),
+                     p.x(),
+                     rect.ymax()
+                );
+
+
+            } else {
+                return new RectHV(
+                        rect.xmin(),
+                        rect.ymin(),
+                        rect.xmax(),
+                        p.y()
+                );
+            }
+        }
+
+        private RectHV rectRt() {
+            if (!horizontal) {
+                return new RectHV(
+                        p.x(),
+                        rect.ymin(),
+                        rect.xmax(),
+                        rect.ymax()
+                );
+            }
+
+            else {
+                return new RectHV(
+                        rect.xmin(),
+                        p.y(),
+                        rect.xmax(),
+                        rect.ymax()
+                );
+            }
+        }
+
     }
     // Not sure how we'd utilize the left/bottom and right/top subtree?
     //
@@ -44,10 +85,11 @@ public class KdTree {
         if (p == null) throw new IllegalArgumentException();
         size++;
 
-        if (root == null) { // && size == 1
+        if (root == null) {
             Node node = new Node();
             node.p = p;
             node.horizontal = false;
+            node.rect = new RectHV(0.0, 0.0, 1.0, 1.0);
             root = node;
 
             return;
@@ -57,7 +99,6 @@ public class KdTree {
     }
 
     private void insertNextFreeSubTree(Point2D p, Node node) {
-
 
         if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
             if (node.p.x() <= p.x()) {
@@ -71,6 +112,8 @@ public class KdTree {
 
                     // The next layer in the tree will be opposite thus we invert the horizontal state.
                     node.rt.horizontal = !(node.horizontal);
+                    node.rt.rect = node.rectRt();
+
                 } else {
                     insertNextFreeSubTree(p, node.rt);
                 }
@@ -89,6 +132,7 @@ public class KdTree {
 
                     // The next layer in the tree will be opposite thus we invert the horizontal state.
                     node.lb.horizontal = !(node.horizontal);
+                    node.lb.rect = node.rectLb();
                 } else {
                     // If not null, call itself recursively to get to the next node in the tree.
                     insertNextFreeSubTree(p, node.lb);
@@ -109,6 +153,8 @@ public class KdTree {
 
                     // Next layer in the tree will always be horizontal.
                     node.rt.horizontal = !node.horizontal;
+                    node.rt.rect = node.rectRt();
+
                 } else {
                     // If not null, call itself recursively to get to the next node in the tree.
                     insertNextFreeSubTree(p, node.rt);
@@ -124,6 +170,7 @@ public class KdTree {
                     node.lb.p = p;
 
                     node.lb.horizontal = !node.horizontal;
+                    node.lb.rect = node.rectLb();
 
                 } else {
                     insertNextFreeSubTree(p, node.lb);
@@ -132,7 +179,6 @@ public class KdTree {
             }
         }
     }
-
 
     public boolean contains(Point2D p) {             // does the set contain point p?
         if (p == null) throw new IllegalArgumentException();
@@ -154,7 +200,6 @@ public class KdTree {
                     containsSubMethod(p, node.rt);
                 }
             }
-
 
         } else {
             if (isPointLeftOfParentNode(p, node)) {
@@ -196,18 +241,23 @@ public class KdTree {
 
     private void drawSubtree(Node node) {
 
-        StdDraw.setPenColor(StdDraw.BLACK);
-        StdDraw.setPenRadius(0.01);
-
-        node.p.draw();
         if (node.horizontal) {
             StdDraw.setPenColor(StdDraw.BLUE);
-            StdDraw.line(0, node.p.y(), 1, node.p.y()); // TODO: Draw till hitting the next line, not till the end.
+            StdDraw.setPenRadius();
+            StdDraw.line(node.rect.xmin(), node.p.y(), node.rect.xmax(), node.p.y());
 
         } else {
             StdDraw.setPenColor(StdDraw.RED);
-            StdDraw.line(node.p.x(), 0, node.p.x(), 1); // TODO: Draw till hitting the next line, not till the end.
+            StdDraw.setPenRadius();
+            StdDraw.line(node.p.x(), node.rect.ymin(), node.p.x(), node.rect.ymax());
+
         }
+
+
+        StdDraw.setPenColor(StdDraw.BLACK);
+        StdDraw.setPenRadius(0.01);
+        node.p.draw();
+
 
         if (node.lb != null) {
             drawSubtree(node.lb);
@@ -216,9 +266,6 @@ public class KdTree {
         if (node.rt != null) {
             drawSubtree(node.rt);
         }
-
-
-
     }
 
     public Iterable<Point2D> range(RectHV rect) {    // all points that are inside the rectangle (or on the boundary)
@@ -290,10 +337,7 @@ public class KdTree {
             Point2D p = new Point2D(x, y);
             kdtree.insert(p);
         }
-
         kdtree.draw();
-
-
     }
 }
 
