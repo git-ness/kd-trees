@@ -62,7 +62,7 @@ public class PointSET {
             if (nearestPoint == null) {
                 nearestPoint = point;
             } else {
-                if (nearestPoint.distanceTo(p) < p.distanceTo(point)) {
+                if (nearestPoint.distanceTo(p) > p.distanceTo(point)) {
                     nearestPoint = point;
                 }
             }
@@ -72,5 +72,18 @@ public class PointSET {
 
     public static void main(String[] args) {         // unit testing of the methods (optional)
 
+        Point2D point1 = new Point2D(0.5, 0.6);
+        Point2D point2 = new Point2D(0.97, 0.06);
+//        Point2D point3 = new Point2D(0.21, 0.2);
+
+        PointSET pointSET = new PointSET();
+
+        pointSET.insert(point1);
+        pointSET.insert(point2);
+//        pointSET.insert(point3);
+        Point2D searchPoint = new Point2D(0.2, 0.1);
+
+        Point2D result = pointSET.nearest(searchPoint);
+        System.out.println("" + result);
     }
 }

@@ -39,10 +39,10 @@ public class KdTree {
 
             if (!horizontal) {
                 return new RectHV(
-                     rect.xmin(),
-                     rect.ymin(),
-                     p.x(),
-                     rect.ymax()
+                        rect.xmin(),
+                        rect.ymin(),
+                        p.x(),
+                        rect.ymax()
                 );
 
 
@@ -64,9 +64,7 @@ public class KdTree {
                         rect.xmax(),
                         rect.ymax()
                 );
-            }
-
-            else {
+            } else {
                 return new RectHV(
                         rect.xmin(),
                         p.y(),
@@ -101,7 +99,7 @@ public class KdTree {
     private void insertNextFreeSubTree(Point2D p, Node node) {
 
         if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
-            if (node.p.x() <= p.x()) {
+            if (node.p.y() <= p.y()) {
                     /* -------------
                        Right tree and left side
                       -------------- */
@@ -146,7 +144,7 @@ public class KdTree {
                  ------------- */
 
             // TODO: Top - !node.horizontal .. but top what? I think the point is physically above the parent node.
-            if (node.p.y() >= p.y()) {
+            if (node.p.x() <= p.x()) {
                 if (node.rt == null) {
                     node.rt = new Node();
                     node.rt.p = p;
@@ -244,20 +242,19 @@ public class KdTree {
         if (node.horizontal) {
             StdDraw.setPenColor(StdDraw.BLUE);
             StdDraw.setPenRadius();
+
             StdDraw.line(node.rect.xmin(), node.p.y(), node.rect.xmax(), node.p.y());
+//            System.out.println("node.p.x: " + node.p.x() + " node.p.y: " + node.p.y() + " node.rect.xmax and .ymax: " + node.rect.xmax() + " " + node.rect.ymax() );
 
         } else {
             StdDraw.setPenColor(StdDraw.RED);
             StdDraw.setPenRadius();
             StdDraw.line(node.p.x(), node.rect.ymin(), node.p.x(), node.rect.ymax());
-
         }
-
 
         StdDraw.setPenColor(StdDraw.BLACK);
         StdDraw.setPenRadius(0.01);
         node.p.draw();
-
 
         if (node.lb != null) {
             drawSubtree(node.lb);
@@ -276,6 +273,8 @@ public class KdTree {
     }
 
     private ArrayList<Point2D> rangeSubMethod(RectHV rect, Node node) {
+        if (node == null || rect == null) throw new IllegalArgumentException();
+
         ArrayList<Point2D> pointsInRectangle = new ArrayList<>();
 
         if (rect.contains(node.p)) {
@@ -284,15 +283,27 @@ public class KdTree {
 
         if (node.horizontal) {
             if (isRectBelowPoint(node, rect)) {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
-            } else {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+                if (node.lb != null) {
+                    pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
+                }
+            }
+
+            if (isRectAbovePoint(node, rect)) {
+                if (node.rt != null) {
+                    pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+                }
             }
         } else {
             if (isRectToLeftOfPoint(node, rect)) {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
-            } else {
-                pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+                if (node.lb != null) {
+                    pointsInRectangle.addAll(rangeSubMethod(rect, node.lb));
+                }
+            }
+
+            if (isRectToRightOfPoint(node, rect)) {
+                if (node.rt != null) {
+                    pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
+                }
             }
 
         }
@@ -301,43 +312,69 @@ public class KdTree {
     }
 
     private boolean isRectToLeftOfPoint(Node node, RectHV rect) {
-        return node.p.x() < rect.xmin();
+        return rect.xmin() < node.p.x();
+    }
+
+    private boolean isRectToRightOfPoint(Node node, RectHV rect) {
+        return node.p.x() <= rect.xmax();
     }
 
     private boolean isRectBelowPoint(Node node, RectHV rect) {
-        return node.p.y() < rect.ymin();
+        return rect.ymin() < node.p.y();
+    }
+
+    private boolean isRectAbovePoint(Node node, RectHV rect) {
+        return rect.ymax() >= node.p.y();
     }
 
 
     public Point2D nearest(Point2D p) {              // a nearest neighbor in the set to point p; null if the set is empty
-        // Add in the rectangle because you're defining the rectangle.
+        if (p == null) throw new IllegalArgumentException();
 
-//        if (this.isEmpty()) throw new IllegalArgumentException();
-//        Point2D nearestPoint = null;
-//
-//        for (Point2D point : setOfPointsInTree) {
-//            if (nearestPoint == null) {
-//                nearestPoint = point;
-//            } else {
-//                if (nearestPoint.distanceTo(p) < p.distanceTo(point)) {
-//                    nearestPoint = point;
-//                }
-//            }
-//        }
-        return null;
+
+
+
+
+        return nearestSub(p, root);
+    }
+
+    private Point2D nearestSub(Point2D p, Node node ) {
+        Point2D nearestCanidate = node.p;
+
+        if (node.lb != null) {
+            //TODO: Consider left tree
+            if (p.distanceTo(node.lb.p) < p.distanceTo(nearestCanidate)) {
+                nearestCanidate = node.lb.p;
+            }
+        }
+
+        if (node.rt != null) {
+            //TODO: Consider right tree
+            if (p.distanceTo(node.rt.p) < p.distanceTo(nearestCanidate)) {
+                nearestCanidate = node.rt.p;
+            }
+        }
+
+        return nearestCanidate;
+
     }
 
     public static void main(String[] args) {         // unit testing of the methods (optional)
-        String filename = args[0];
-        In in = new In(filename);
-        KdTree kdtree = new KdTree();
-        while (!in.isEmpty()) {
-            double x = in.readDouble();
-            double y = in.readDouble();
-            Point2D p = new Point2D(x, y);
-            kdtree.insert(p);
-        }
-        kdtree.draw();
+
+        KdTree kdTree = new KdTree();
+        Point2D point1 = new Point2D(0.5, 0.6);
+        Point2D point2 = new Point2D(0.97, 0.06);
+//        Point2D point3 = new Point2D(0.21, 0.2);
+
+        kdTree.insert(point1);
+        kdTree.insert(point2);
+//        kdTree.insert(point3);
+        Point2D searchPoint = new Point2D(0.2, 0.1);
+
+        Point2D nearest = kdTree.nearest(searchPoint);
+
+
+        System.out.println("Nearest point (0.21, 0.2): " + nearest);
     }
 }
 
