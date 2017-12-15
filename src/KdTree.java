@@ -98,6 +98,7 @@ public class KdTree {
     }
 
     private void insertNextFreeSubTree(Point2D p, Node node) {
+        System.out.println("Visited ");
 
         if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
             if (node.p.y() <= p.y()) {
@@ -306,9 +307,7 @@ public class KdTree {
                     pointsInRectangle.addAll(rangeSubMethod(rect, node.rt));
                 }
             }
-
         }
-
         return pointsInRectangle;
     }
 
@@ -336,7 +335,7 @@ public class KdTree {
     private Point2D nearestSub(Point2D p, Node node) {
         Point2D nearestCanidate = node.p;
 
-        if (node.lb != null) {
+        if (node.lb != null && node.rt == null) {
             // Consider left tree
             if (node.lb.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
                 Point2D newCanidate = nearestSub(p, node.lb);
@@ -345,9 +344,7 @@ public class KdTree {
                     nearestCanidate = newCanidate;
                 }
             }
-        }
-
-        if (node.rt != null) {
+        } else if (node.rt != null && node.lb == null) {
             // Consider right tree
             if (node.rt.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
                 Point2D newCanidate = nearestSub(p, node.rt);
@@ -355,28 +352,67 @@ public class KdTree {
                 if (newCanidate.distanceTo(p) < nearestCanidate.distanceTo(p)) {
                     nearestCanidate = newCanidate;
                 }
+            }
+        } else if (node.rt == null && node.lb == null) {
+            return nearestCanidate;
+        } else {
 
+            if (node.rt.rect.distanceSquaredTo(p) > node.lb.rect.distanceSquaredTo(p)) {
+                if (node.lb.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
+                    Point2D newCanidate = nearestSub(p, node.lb);
+
+                    if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
+                        nearestCanidate = newCanidate;
+                    }
+                }
+
+                if (node.rt.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
+                    Point2D newCanidate = nearestSub(p, node.rt);
+
+                    if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
+                        nearestCanidate = newCanidate;
+                    }
+                }
+            } else {
+
+                if (node.rt.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
+                    Point2D newCanidate = nearestSub(p, node.rt);
+
+                    if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
+                        nearestCanidate = newCanidate;
+                    }
+                }
+
+                if (node.lb.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
+                    Point2D newCanidate = nearestSub(p, node.lb);
+
+                    if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
+                        nearestCanidate = newCanidate;
+                    }
+                }
             }
         }
-
         return nearestCanidate;
     }
 
     public static void main(String[] args) {         // unit testing of the methods (optional)
 
-        KdTree kdTree = new KdTree();
-        Point2D point1 = new Point2D(0.5, 0.6);
-        Point2D point2 = new Point2D(0.97, 0.06);
-        Point2D point3 = new Point2D(0.21, 0.2);
-        Point2D point4 = new Point2D(0.9, 0.9);
+        // initialize the two data structures with point from file
+        String filename = args[0];
+        In in = new In(filename);
+        PointSET brute = new PointSET();
+        KdTree kdtree = new KdTree();
+        while (!in.isEmpty()) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            Point2D p = new Point2D(x, y);
+            kdtree.insert(p);
+            brute.insert(p);
+        }
 
-        kdTree.insert(point1);
-        kdTree.insert(point2);
-        kdTree.insert(point3);
-        kdTree.insert(point4);
 
-        Point2D searchPoint = new Point2D(0.97, 0.06);
-        Point2D nearest = kdTree.nearest(searchPoint);
+        Point2D searchPoint = new Point2D(0.81, 0.30);
+        Point2D nearest = kdtree.nearest(searchPoint);
 
         System.out.println("Nearest point (0.97, 0.06): " + nearest);
     }
