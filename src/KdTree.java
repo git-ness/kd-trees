@@ -333,34 +333,29 @@ public class KdTree {
         return nearestSub(p, root);
     }
 
-    private Point2D nearestSub(Point2D p, Node node ) {
+    private Point2D nearestSub(Point2D p, Node node) {
         Point2D nearestCanidate = node.p;
 
-        if (node.horizontal) {
-            if (node.lb != null) {
-                // Consider left tree
-                if (p.distanceTo(node.lb.p) < p.distanceTo(nearestCanidate)) {
-                    nearestCanidate = node.lb.p;
-                }
-            }
+        if (node.lb != null) {
+            // Consider left tree
+            if (node.lb.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
+                Point2D newCanidate = nearestSub(p, node.lb);
 
-            if (node.rt != null) {
-                // Consider right tree
-                if (p.distanceTo(node.rt.p) < p.distanceTo(nearestCanidate)) {
-                    nearestCanidate = node.rt.p;
+                if (newCanidate.distanceTo(p) < nearestCanidate.distanceTo(p)) {
+                    nearestCanidate = newCanidate;
                 }
             }
-        } else {
-            if (node.lb != null) {
-                if (p.distanceTo(node.lb.p) < p.distanceTo(nearestCanidate)) {
-                    nearestCanidate = node.lb.p;
-                }
-            }
+        }
 
-            if (node.rt != null) {
-                if (p.distanceTo(node.rt.p) < p.distanceTo(nearestCanidate)) {
-                    nearestCanidate = node.rt.p;
+        if (node.rt != null) {
+            // Consider right tree
+            if (node.rt.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
+                Point2D newCanidate = nearestSub(p, node.rt);
+
+                if (newCanidate.distanceTo(p) < nearestCanidate.distanceTo(p)) {
+                    nearestCanidate = newCanidate;
                 }
+
             }
         }
 
@@ -380,10 +375,10 @@ public class KdTree {
         kdTree.insert(point3);
         kdTree.insert(point4);
 
-        Point2D searchPoint = new Point2D(0.9, 0.9);
+        Point2D searchPoint = new Point2D(0.97, 0.06);
         Point2D nearest = kdTree.nearest(searchPoint);
 
-        System.out.println("Nearest point (0.9, 0.9): " + nearest);
+        System.out.println("Nearest point (0.97, 0.06): " + nearest);
     }
 }
 
