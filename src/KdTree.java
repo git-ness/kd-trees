@@ -82,7 +82,7 @@ public class KdTree {
     public void insert(Point2D p) {                  // add the point to the set (if it is not already in the set)
         // "write a simplified version of insert() which does everything except set up the RectHV for each node"
         if (p == null) throw new IllegalArgumentException();
-        size++;
+
 
         if (root == null) {
             Node node = new Node();
@@ -90,15 +90,19 @@ public class KdTree {
             node.horizontal = false;
             node.rect = new RectHV(0.0, 0.0, 1.0, 1.0);
             root = node;
-
+            size = 1;
             return;
         }
 
-        insertNextFreeSubTree(p, root);
+        if (!contains(p)) {
+            size++;
+            insertNextFreeSubTree(p, root);
+        }
+
     }
 
     private void insertNextFreeSubTree(Point2D p, Node node) {
-        System.out.println("Visited ");
+//        System.out.println("Visited ");
 
         if (node.horizontal) { // When solely root is set, child-node will not be horizontal; we set root subtree to be horizontal.
             if (node.p.y() <= p.y()) {
@@ -190,25 +194,26 @@ public class KdTree {
     private boolean containsSubMethod(Point2D p, Node node) {
 
         if (p.equals(node.p)) return true;
+        
         if (node.horizontal) {
             if (isPointBelowParentNode(p, node)) {
                 if (node.lb != null) {
-                    containsSubMethod(p, node.lb);
+                    return containsSubMethod(p, node.lb);
                 }
             } else {
                 if (node.rt != null) {
-                    containsSubMethod(p, node.rt);
+                    return containsSubMethod(p, node.rt);
                 }
             }
 
         } else {
             if (isPointLeftOfParentNode(p, node)) {
                 if (node.lb != null) {
-                    containsSubMethod(p, node.lb);
+                    return containsSubMethod(p, node.lb);
                 }
             } else {
                 if (node.rt != null) {
-                    containsSubMethod(p, node.rt);
+                    return containsSubMethod(p, node.rt);
                 }
             }
         }
@@ -337,19 +342,19 @@ public class KdTree {
 
         if (node.lb != null && node.rt == null) {
             // Consider left tree
-            if (node.lb.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
+            if (node.lb.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
                 Point2D newCanidate = nearestSub(p, node.lb);
 
-                if (newCanidate.distanceTo(p) < nearestCanidate.distanceTo(p)) {
+                if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
                     nearestCanidate = newCanidate;
                 }
             }
         } else if (node.rt != null && node.lb == null) {
             // Consider right tree
-            if (node.rt.rect.distanceTo(p) < p.distanceTo(nearestCanidate)) {
+            if (node.rt.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearestCanidate)) {
                 Point2D newCanidate = nearestSub(p, node.rt);
 
-                if (newCanidate.distanceTo(p) < nearestCanidate.distanceTo(p)) {
+                if (newCanidate.distanceSquaredTo(p) < nearestCanidate.distanceSquaredTo(p)) {
                     nearestCanidate = newCanidate;
                 }
             }
@@ -411,10 +416,10 @@ public class KdTree {
         }
 
 
-        Point2D searchPoint = new Point2D(0.81, 0.30);
+        Point2D searchPoint = new Point2D(0.9, 0.6);
         Point2D nearest = kdtree.nearest(searchPoint);
 
-        System.out.println("Nearest point (0.97, 0.06): " + nearest);
+        System.out.println("Contains: " + kdtree.contains(searchPoint));
     }
 }
 
